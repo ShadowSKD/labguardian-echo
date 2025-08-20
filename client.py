@@ -5,6 +5,7 @@ import socket
 import json
 import threading
 import os
+import google.generativeai as genai
 
 def get_wifi_ip():
     """Retrieve the IP address of the WiFi connection."""
@@ -102,7 +103,50 @@ def log_activity(activity):
     except Exception as e:
         print("Failed to write log. Server may be down.")
 
-def monitor_processes():
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") # Ensure the API key is set
+if not GEMINI_API_KEY:
+    print("GEMINI_API_KEY environment variable not set. Exiting.")
+    exit(1)
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-pro')
+
+def is_app_forbidden(app_name, retries=3):
+    """Check with Gemini API if an application is forbidden."""
+    prompt = f"Is the application '{app_name}' a web browser, communication tool, or any app unsuitable for a restricted lab exam environment? Answer only with 'Yes' or 'No'."
+    for attempt in range(retries):
+        try:
+            response = model.generate_content(prompt)
+            # Simple check for "Yes" in the response text, case-insensitive
+            if 'yes' in response.text.lower():
+                return True
+            return False
+        except Exception as e:
+            print(f"Gemini API call failed for {app_name}: {e}. Retrying... ({attempt + 1}/{retries})")
+            time.sleep(2)
+    print(f"Could not verify {app_name} with Gemini API after {retries} retries.")
+    return False
+
+def monitor_processes_AI():
+    """Monitor running processes using Gemini API to identify forbidden applications."""
+    checked_apps = set()
+    while True:
+        current_processes = {p.info['name'] for p in psutil.process_iter(['name']) if p.info['name']}
+        
+        new_processes = current_processes - checked_apps
+        
+        for app_name in new_processes:
+            print(f"Checking new process: {app_name}")
+            if is_app_forbidden(app_name):
+                alert_msg = f"Forbidden app detected by AI: {app_name}"
+                print(alert_msg)
+                send_alert(alert_msg)
+                log_activity({"type": "process", "name": app_name, "timestamp": time.time()})
+            
+            checked_apps.add(app_name)
+            
+        time.sleep(5)
+
+def monitor_processes_old_no_AI():
     """Monitor running processes for forbidden applications."""
     foundApps = set()
     while True:
@@ -151,7 +195,7 @@ if __name__ == "__main__":
 
     # Start monitoring threads
     threads = [
-        threading.Thread(target=monitor_processes, daemon=True),
+        threading.Thread(target=monitor_processes_AI, daemon=True),
         # threading.Thread(target=monitor_network, daemon=True),
         threading.Thread(target=send_log_to_admin, daemon=True),
         threading.Thread(target=send_heartbeat, daemon=True)
