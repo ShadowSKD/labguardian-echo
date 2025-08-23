@@ -17,3 +17,8 @@
     - `ADMIN_SERVER` (admin server URL)
     - `CLIENT_USERNAME` and `LAB_CODE`
     - `FORBIDDEN_APPS` and `ALLOWED_WEBSITES` as needed
+
+# Updates
+
+## Recents
+-It now features integration with Gemini API, allowing advanced AI-powered analysis and automation capabilities.
