@@ -58,11 +58,12 @@ def get_client_id():
         response = requests.post(f"{ADMIN_SERVER}/api/clients/register", json={"labCode": LAB_CODE, "clientName": CLIENT_USERNAME}, timeout=3)
         if response.status_code == 201:
             client_id = response.json().get("clientId")
-            if client_id:
+            lab_prompt = response.json().get("labPrompt")
+            if client_id and lab_prompt:
                 print(f"Received client ID: {client_id}")
-                return client_id
+                return client_id, lab_prompt
             else:
-                print("Failed to retrieve client ID from response.")
+                print("Failed to retrieve client ID and Lab activity prompt from response.")
         else:
             print(f"Failed to register client. Status code: {response.status_code}")
     except requests.exceptions.RequestException as e:
@@ -70,7 +71,7 @@ def get_client_id():
     return None
 
 # Get client ID at the start
-client_id = get_client_id()
+client_id, lab_prompt = get_client_id()
 if not client_id:
     print("Exiting due to failure in obtaining client ID.")
     exit(1)
@@ -112,7 +113,7 @@ model = genai.GenerativeModel('gemini-pro')
 
 def is_app_forbidden(app_name, retries=3):
     """Check with Gemini API if an application is forbidden."""
-    prompt = f"Is the application '{app_name}' a web browser, communication tool, or any app unsuitable for a restricted lab exam environment? Answer only with 'Yes' or 'No'."
+    prompt = f"Is the application '{app_name}' " + ("a web browser, communication tool, or any app unsuitable" if not lab_prompt else lab_prompt) + " for a restricted lab exam environment? Answer only with 'Yes' or 'No'."
     for attempt in range(retries):
         try:
             response = model.generate_content(prompt)
