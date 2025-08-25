@@ -5,6 +5,7 @@ import socket
 import json
 import threading
 import os
+import google.generativeai as genai
 
 def get_wifi_ip():
     """Retrieve the IP address of the WiFi connection."""
@@ -112,7 +113,7 @@ model = genai.GenerativeModel('gemini-pro')
 
 def is_app_forbidden(app_name, retries=3):
     """Check with Gemini API if an application is forbidden."""
-    prompt = f"Is the application '{app_name}' " + ("a web browser, communication tool, or any app unsuitable" if not lab_prompt else lab_prompt) + " for a restricted lab exam environment? Answer only with 'Yes' or 'No'."
+    prompt = ("Is the following application a web browser, communication tool, or any app unsuitable for a restricted lab exam environment? Answer only with 'Yes' or 'No'." if not lab_prompt else lab_prompt)  + f"App name: {app_name}"
     for attempt in range(retries):
         try:
             response = model.generate_content(prompt)
@@ -195,7 +196,7 @@ if __name__ == "__main__":
 
     # Start monitoring threads
     threads = [
-        threading.Thread(target=monitor_processes, daemon=True),
+        threading.Thread(target=monitor_processes_AI, daemon=True),
         # threading.Thread(target=monitor_network, daemon=True),
         threading.Thread(target=send_log_to_admin, daemon=True),
         threading.Thread(target=send_heartbeat, daemon=True)
