@@ -5,7 +5,6 @@ import socket
 import json
 import threading
 import os
-import google.generativeai as genai
 
 def get_wifi_ip():
     """Retrieve the IP address of the WiFi connection."""
@@ -196,7 +195,7 @@ if __name__ == "__main__":
 
     # Start monitoring threads
     threads = [
-        threading.Thread(target=monitor_processes_AI, daemon=True),
+        threading.Thread(target=monitor_processes, daemon=True),
         # threading.Thread(target=monitor_network, daemon=True),
         threading.Thread(target=send_log_to_admin, daemon=True),
         threading.Thread(target=send_heartbeat, daemon=True)
