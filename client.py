@@ -5,6 +5,7 @@ import socket
 import json
 import threading
 import os
+import msvcrt
 import google.generativeai as genai
 
 def get_wifi_ip():
@@ -22,10 +23,10 @@ def get_wifi_ip():
 wifi_ip = get_wifi_ip()
 
 # Admin server URL
-ADMIN_SERVER = "http://192.168.72.14:5000"
+ADMIN_SERVER = "http://localhost:5000"
 LOG_FILE = "activity_log.json"
 CLIENT_USERNAME = "Client-1"
-LAB_CODE = "lab1"
+LAB_CODE = "lab3"
 
 # List of forbidden applications
 FORBIDDEN_APPS = {"chrome.exe", "firefox.exe", "Notepad.exe"}
@@ -51,6 +52,17 @@ def check_server_status(max_retries=5):
     print("Server is not reachable. Switching to manual mode. \nMonitoring started in manual mode.")
     print("Please ensure the server is running to receive alerts and logs.")
 
+    while True:
+        choice = input("Server is not reachable. Retry connecting? (y/n): ").strip().lower()
+        if choice == 'y':
+            check_server_status()
+            break
+        elif choice == 'n':
+            print("Exiting as per user request.")
+            exit(1)
+        else:
+            print("Please enter 'y' or 'n'.")
+
 def get_client_id():
     """Get a unique client ID from the admin server."""
     check_server_status()
@@ -64,14 +76,25 @@ def get_client_id():
                 return client_id, lab_prompt
             else:
                 print("Failed to retrieve client ID and Lab activity prompt from response.")
+            
         else:
             print(f"Failed to register client. Status code: {response.status_code}")
+            while True:
+                choice = input("Retry registering client? (y/n): ").strip().lower()
+                if choice == 'y':
+                    return get_client_id()
+                elif choice == 'n':
+                    print("Exiting as per user request.")
+                    exit(1)
+                else:
+                    print("Please enter 'y' or 'n'.")
     except requests.exceptions.RequestException as e:
         print(f"Failed to communicate with server: {e}")
     return None
 
 # Get client ID at the start
-client_id, lab_prompt = get_client_id()
+client_data = get_client_id()
+client_id, lab_prompt = client_data if client_data else (None, None)
 if not client_id:
     print("Exiting due to failure in obtaining client ID.")
     exit(1)
@@ -109,11 +132,21 @@ if not GEMINI_API_KEY:
     print("GEMINI_API_KEY environment variable not set. Exiting.")
     exit(1)
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-2.5-flash')
+
+# Load whitelist of safe processes from safe_processes.json
+try:
+    with open("safe_processes.json", "r") as f:
+        white_list = set(json.load(f))
+except Exception as e:
+    print(f"Failed to load safe_processes.json: {e}")
+    white_list = set()
 
 def is_app_forbidden(app_name, retries=3):
     """Check with Gemini API if an application is forbidden."""
-    prompt = ("Is the following application a web browser, communication tool, or any app unsuitable for a restricted lab exam environment? Answer only with 'Yes' or 'No'." if not lab_prompt else lab_prompt)  + f"App name: {app_name}"
+    if app_name in white_list:
+        return False
+    prompt = ("(excluding apps that run in background for basic functionality of OS / Not used for malpractice) Is the following application a web browser, communication tool, or any app unsuitable for a restricted lab exam environment? Answer only with 'Yes' or 'No'." if not lab_prompt else "(excluding apps that run in background for basic functionality of OS / Not used for malpractice)"+lab_prompt)  + f"App name: {app_name}"
     for attempt in range(retries):
         try:
             response = model.generate_content(prompt)
