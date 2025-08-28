@@ -130,7 +130,6 @@ def log_activity(activity):
     except Exception as e:
         print("Failed to write log. Server may be down.")
 
-
 GEMINI_API_KEY = config.get('gemini', 'GEMINI_API_KEY')
 if not GEMINI_API_KEY:
     print("GEMINI_API_KEY environment variable not set. Exiting.")
