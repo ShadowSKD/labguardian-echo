@@ -6,6 +6,7 @@ import json
 import threading
 import os
 import msvcrt
+import configparser
 import google.generativeai as genai
 
 def get_wifi_ip():
@@ -19,14 +20,16 @@ def get_wifi_ip():
         print(f"Failed to retrieve WiFi IP address: {e}")
         return None
 
+config = configparser.ConfigParser()
+config.read('settings.ini')
+
 # Retrieve and print the WiFi IP address at startup
 wifi_ip = get_wifi_ip()
 
-# Admin server URL
-ADMIN_SERVER = "http://localhost:5000"
-LOG_FILE = "activity_log.json"
-CLIENT_USERNAME = "Client-1"
-LAB_CODE = "lab1"
+ADMIN_SERVER = config.get('DEFAULT', 'ADMIN_SERVER')
+LOG_FILE = config.get('DEFAULT', 'LOG_FILE')
+CLIENT_USERNAME = config.get('DEFAULT', 'CLIENT_USERNAME')
+LAB_CODE = config.get('DEFAULT', 'LAB_CODE')
 
 # List of forbidden applications
 FORBIDDEN_APPS = {"chrome.exe", "firefox.exe", "Notepad.exe"}
@@ -127,7 +130,7 @@ def log_activity(activity):
     except Exception as e:
         print("Failed to write log. Server may be down.")
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") # Ensure the API key is set
+GEMINI_API_KEY = config.get('gemini', 'GEMINI_API_KEY')
 if not GEMINI_API_KEY:
     print("GEMINI_API_KEY environment variable not set. Exiting.")
     exit(1)
