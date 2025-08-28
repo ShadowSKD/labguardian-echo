@@ -1,0 +1,9 @@
+[gemini]
+# Gemini API configuration
+GEMINI_API_KEY = YOUR_API_KEY_HERE
+
+[DEFAULT]
+ADMIN_SERVER = YOUR_ADMIN_SERVER_URL
+LOG_FILE = activity_log.json
+CLIENT_USERNAME = Client_Name
+LAB_CODE = Lab_Code
