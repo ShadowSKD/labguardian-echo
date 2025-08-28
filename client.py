@@ -26,7 +26,7 @@ wifi_ip = get_wifi_ip()
 ADMIN_SERVER = "http://localhost:5000"
 LOG_FILE = "activity_log.json"
 CLIENT_USERNAME = "Client-1"
-LAB_CODE = "lab3"
+LAB_CODE = "lab1"
 
 # List of forbidden applications
 FORBIDDEN_APPS = {"chrome.exe", "firefox.exe", "Notepad.exe"}
